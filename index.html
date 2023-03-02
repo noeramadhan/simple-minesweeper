@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Minesweeper</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                padding: 0;
+                margin: 0;
+            }
+            #app {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            .input-group {
+                text-align: center;
+                display: flex;
+                /* flex-direction: column; */
+            }
+            .input-group input,
+            .button {
+                text-align: center;
+                width: 5rem;
+                padding: 0.5rem 1rem;
+                margin: 0 0.4rem;
+                margin-bottom: 1rem;
+            }
+            input::-webkit-outer-spin-button,
+            input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            .board {
+                margin-top: 1rem;
+                background: gold;
+                display: flex;
+                flex-direction: column;
+            }
+            .row {
+                display: flex;
+            }
+            .tile {
+                width: 40px;
+                height: 40px;
+                background: green;
+                border: 1px black solid;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                user-select: none;
+                color: white;
+                /* font-weight: 600; */
+                /* font-size: 10px; */
+            }
+            .tile:hover {
+                background: whitesmoke;
+                color: black;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div class="input-group">
+                <input
+                    type="number"
+                    min="3"
+                    value="4"
+                    name="sizeX"
+                    id="sizeX"
+                />
+                <input
+                    type="number"
+                    min="3"
+                    value="4"
+                    name="sizeY"
+                    id="sizeY"
+                />
+                <input
+                    type="number"
+                    min="3"
+                    value="4"
+                    name="sizeZ"
+                    id="sizeZ"
+                />
+                <button class="button" onclick="refresh()">Refresh</button>
+            </div>
+
+            <div class="board"></div>
+        </div>
+
+        <script>
+            var MasterData = []
+            const randomizeData = (sizeX, sizeY, sizeZ) => {
+                const sizeMax = sizeX * sizeY
+                let countBomb = sizeZ
+                let countTile = sizeMax
+
+                let data = []
+                for (let i = 0; i < sizeY; i++) {
+                    let datum = []
+                    for (let j = 0; j < sizeX; j++) {
+                        if (countBomb > 0) {
+
+                            let sample1 = countBomb / countTile
+                            let sample2 = sizeZ / sizeMax
+                            let sample = sample1 * sample2 * Math.random() * 0.6998
+
+                            if (sample > 0.01) {
+                                datum.push('X')
+                                countBomb--
+                            } else {
+                                datum.push(' ')
+                            }
+                        } else {
+                            datum.push(' ')
+                        }
+                        countTile--
+                    }
+                    // console.log(datum)
+                    data.push(datum)
+                }
+                if (countBomb > 0) {
+                    console.log('bomb', sizeZ, 'bomb left', countBomb)
+                }
+
+                data = data.map((itemY, indexY) => {
+                    return itemY.map((itemX, indexX) => {
+                        if (itemX == ' ') {
+                            let countNeighbor = 0
+                            let i = indexY
+                            let j = indexX
+                            let findYNeg = i - 1
+                            let findXNeg = j - 1
+                            let findYPos = i + 1
+                            let findXPos = j + 1
+
+                            if (
+                                findYNeg >= 0 &&
+                                findXNeg >= 0 &&
+                                data[findYNeg][findXNeg] == 'X'
+                            ) {
+                                countNeighbor++
+                            }
+                            if (findYNeg >= 0 && data[findYNeg][j] == 'X') {
+                                countNeighbor++
+                            }
+                            if (
+                                findYNeg >= 0 &&
+                                findYPos < sizeY &&
+                                data[findYNeg][findXPos] == 'X'
+                            ) {
+                                countNeighbor++
+                            }
+                            if (findXNeg >= 0 && data[i][findXNeg] == 'X') {
+                                countNeighbor++
+                            }
+                            if (findXPos < sizeX && data[i][findXPos] == 'X') {
+                                countNeighbor++
+                            }
+                            if (
+                                findXNeg >= 0 &&
+                                findYPos < sizeY &&
+                                data[findYPos][findXNeg] == 'X'
+                            ) {
+                                countNeighbor++
+                            }
+                            if (findYPos < sizeY && data[findYPos][j] == 'X') {
+                                countNeighbor++
+                            }
+                            if (
+                                findYPos < sizeY &&
+                                data[findYPos][findXPos] == 'X'
+                            ) {
+                                countNeighbor++
+                            }
+
+                            return countNeighbor > 0 ? countNeighbor : ' '
+                        } else return itemX
+                    })
+                })
+
+                return data
+            }
+
+            const createBoard = (sizeX, sizeY, sizeZ) => {
+                MasterData = randomizeData(sizeX, sizeY, sizeZ)
+                const board = document
+                    .getElementById('app')
+                    .querySelector('.board')
+                board.innerHTML = ''
+
+                for (let j = 0; j < sizeY; j++) {
+                    const row = document.createElement('div')
+                    row.className = 'row'
+                    row.setAttribute('id', 'r-' + j)
+                    board.appendChild(row)
+                    for (let i = 0; i < sizeX; i++) {
+                        const tile = document.createElement('div')
+                        tile.className = 'tile'
+                        tile.setAttribute('id', 't-' + j + '-' + i)
+                        tile.setAttribute('opened', false)
+                        if (MasterData[j][i] == 'X') {
+                            tile.style.color = 'red'
+                        }
+                        row.appendChild(tile)
+                    }
+                }
+            }
+
+            const countTile = () => {
+                const board = document
+                    .getElementById('app')
+                    .querySelector('.board')
+                const tile = board.querySelectorAll('.tile[opened=false]')
+                return tile.length
+            }
+            const createListener = () => {
+                const sizeX = document.getElementById('sizeX').value
+                const sizeY = document.getElementById('sizeY').value
+                const sizeZ = document.getElementById('sizeZ').value
+                const sizeMax = sizeZ * sizeY
+
+                const TILE = document.getElementsByClassName('tile')
+                Array.from(TILE).forEach((item, index) => {
+                    item.addEventListener('contextmenu', (event) => {
+                        event.preventDefault()
+                        const id = event.target.id.split('-')
+                        id.shift()
+                        console.log('right click', id)
+                    })
+                    item.addEventListener('click', (event) => {
+                        const id = event.target.id.split('-')
+                        id.shift()
+                        const value = MasterData[id[0]][id[1]] === 'X' ? 'BOMB' : 'OK'
+                        event.target.setAttribute('opened', true)
+                        event.target.innerHTML = MasterData[id[0]][id[1]]
+                        event.target.style.background = 'gray'
+                        console.log('left click', id, value)
+                        if(value == 'BOMB'){
+                            alert('GAME OVER')
+                        }
+                        if(countTile() === sizeZ){
+                            alert('YOU WIN')
+                        }
+                    })
+                })
+            }
+
+            const refresh = () => {
+                console.clear()
+                const sizeX = document.getElementById('sizeX').value
+                const sizeY = document.getElementById('sizeY').value
+                const sizeZ = document.getElementById('sizeZ').value
+                createBoard(sizeX, sizeY, sizeZ)
+                createListener()
+            }
+            refresh()
+        </script>
+    </body>
+</html>
